@@ -153,6 +153,7 @@ void IMU::loop()
             _isrFired        = false;
             _triggerTime_us  = micros();
             _captureStart_ms = millis();
+            _impactFlag      = true;
             detachInterrupt(digitalPinToInterrupt(IMU_INT1_PIN));
             if (verbose) Serial.println(F("IMU: trigger detected"));
             _state = CAPTURING;
@@ -208,6 +209,7 @@ void IMU::loop()
     case DRAINING:
         drainFIFO();
         printCapture();
+        _drainDoneFlag = true;
         delay(REARM_DELAY_MS);
         _state = ARMING;
         break;
@@ -373,4 +375,18 @@ void IMU::drainFIFO()
 const char *IMU::getName() const
 {
     return _IMUname;
+}
+
+bool IMU::takeImpactFlag()
+{
+    if (!_impactFlag) return false;
+    _impactFlag = false;
+    return true;
+}
+
+bool IMU::takeDrainDoneFlag()
+{
+    if (!_drainDoneFlag) return false;
+    _drainDoneFlag = false;
+    return true;
 }

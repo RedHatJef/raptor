@@ -43,6 +43,14 @@ public:
     const char *getName() const;
     void        printCapture() const;
 
+    // Returns true (once) the first time it is called after an impact is detected.
+    // Clears the flag on read, so subsequent calls return false until the next event.
+    bool        takeImpactFlag();
+
+    // Returns true (once) after the FIFO drain and serial print are complete.
+    // Clears the flag on read, so subsequent calls return false until the next event.
+    bool        takeDrainDoneFlag();
+
 private:
     enum State { ARMING, ARMED, CAPTURING, DRAINING };
 
@@ -52,6 +60,8 @@ private:
     State    _state           = ARMING;
     bool     _isUp            = false;
     bool     _fifoFrozen      = false;
+    bool     _impactFlag      = false;
+    bool     _drainDoneFlag   = false;
     uint32_t _triggerTime_us  = 0;
     uint32_t _drainTime_us    = 0;
     uint32_t _captureStart_ms = 0;
