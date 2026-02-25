@@ -22,11 +22,11 @@ static constexpr uint8_t REG_FIFO_DATA_OUT_L = 0x3E; // FIFO output, LSB
 static constexpr uint8_t REG_FIFO_DATA_OUT_H = 0x3F; // FIFO output, MSB
 
 // FIFO_CTRL5 encoding:
-//   bits [6:3] = ODR_FIFO  — 1000 → 1.66 kHz
+//   bits [6:3] = ODR_FIFO  — 1010 → 6.66 kHz
 //   bits [2:0] = FIFO_MODE — 000 bypass / 001 stop-on-full / 011 continuous (ring) / 100 continuous-to-FIFO
 static constexpr uint8_t FIFO_CFG_BYPASS      = 0x00; // resets FIFO, clears pattern counter
-static constexpr uint8_t FIFO_CFG_FIFO_MODE   = 0x41; // (8<<3)|1 — stop-on-full
-static constexpr uint8_t FIFO_CFG_CONTINUOUS  = 0x43; // (8<<3)|3 — ring buffer (overwrites oldest)
+static constexpr uint8_t FIFO_CFG_FIFO_MODE   = 0x51; // (10<<3)|1 — stop-on-full at 6.66 kHz
+static constexpr uint8_t FIFO_CFG_CONTINUOUS  = 0x53; // (10<<3)|3 — ring buffer at 6.66 kHz
 
 // FIFO_CTRL3: DEC_FIFO_G[5:3]=001 (gyro, no decimation) | DEC_FIFO_XL[2:0]=001 (accel, no decimation)
 static constexpr uint8_t FIFO_CTRL3_NO_DEC = 0x09;
@@ -121,9 +121,9 @@ bool IMU::setup()
 
     // Use the Adafruit library to configure sensor ODR and full-scale ranges.
     // These write CTRL1_XL and CTRL2_G; the FIFO ODR is set separately below.
-    _IMU3TRC.setAccelDataRate(LSM6DS_RATE_1_66K_HZ);
+    _IMU3TRC.setAccelDataRate(LSM6DS_RATE_6_66K_HZ);
     _IMU3TRC.setAccelRange(LSM6DS_ACCEL_RANGE_16_G);
-    _IMU3TRC.setGyroDataRate(LSM6DS_RATE_1_66K_HZ);
+    _IMU3TRC.setGyroDataRate(LSM6DS_RATE_6_66K_HZ);
     _IMU3TRC.setGyroRange(LSM6DS_GYRO_RANGE_2000_DPS);
 
     if (verbose)
@@ -246,7 +246,7 @@ void IMU::arm()
     _isrFired = false;
     attachInterrupt(digitalPinToInterrupt(IMU_INT1_PIN), imuISR, RISING);
 
-    if (verbose) Serial.println(F("IMU: armed (Continuous ring-buffer mode)"));
+    if (verbose) Serial.println(F("IMU: armed (Continuous ring-buffer mode, 6.66 kHz)"));
     _state = ARMED;
 }
 

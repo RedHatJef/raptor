@@ -16,22 +16,23 @@ static constexpr uint8_t IMU_INT1_PIN = 3;
 static constexpr uint8_t LSM_ADDR = 0x6A;
 
 // Delay (ms) between the end of a drain and the next rearm.
-// Must be long enough for the ring buffer to fill (~205 ms = 341 samples at 1.66 kHz).
+// Must be long enough for the ring buffer to fill (~51 ms = 341 samples at 6.66 kHz).
 static constexpr uint16_t REARM_DELAY_MS = 500;
 
 // How long to keep the ring buffer running AFTER the trigger fires before freezing it.
 // The FIFO holds 341 samples; POST_EVENT_MS controls the pre/post split:
-//   post-event samples ≈ POST_EVENT_MS × 1.66
+//   post-event samples ≈ POST_EVENT_MS × 6.66
 //   pre-event samples  ≈ 341 − post-event samples
-// Example: 150 ms → ~249 post-event, ~92 pre-event (~73 % post).
+// Example: 35 ms → ~233 post-event, ~108 pre-event (~68 % post).
 // Set to 0 for all pre-event (snapshot just before the event).
-static constexpr uint16_t POST_EVENT_MS = 150;
+// NOTE: keep POST_EVENT_MS < 51 ms (the full FIFO window at 6.66 kHz = 341 / 6660).
+static constexpr uint16_t POST_EVENT_MS = 40;
 
 // Maximum samples to store in ClapEvent (must not exceed ClapData samples[]).
 static constexpr uint16_t BUF_CAPACITY = 511;
 
-// Nominal sample interval at 1.66 kHz ODR.
-static constexpr uint32_t SAMPLE_INTERVAL_US = 603; // 1 / 1660 Hz ≈ 603 µs
+// Nominal sample interval at 6.66 kHz ODR.
+static constexpr uint32_t SAMPLE_INTERVAL_US = 150; // 1 / 6660 Hz ≈ 150 µs
 
 // ── Class ─────────────────────────────────────────────────────────────────────
 class IMU
