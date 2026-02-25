@@ -23,9 +23,10 @@ static constexpr uint8_t REG_FIFO_DATA_OUT_H = 0x3F; // FIFO output, MSB
 
 // FIFO_CTRL5 encoding:
 //   bits [6:3] = ODR_FIFO  — 1000 → 1.66 kHz
-//   bits [2:0] = FIFO_MODE — 000 bypass / 011 continuous / 100 continuous-to-FIFO
-static constexpr uint8_t FIFO_CFG_BYPASS        = 0x00; // resets FIFO, clears pattern counter
-static constexpr uint8_t FIFO_CFG_CONT_TO_FIFO  = 0x44; // (8<<3)|4 — ring buffer until wake-up, then stop-on-full
+//   bits [2:0] = FIFO_MODE — 000 bypass / 001 stop-on-full / 011 continuous (ring) / 100 continuous-to-FIFO
+static constexpr uint8_t FIFO_CFG_BYPASS      = 0x00; // resets FIFO, clears pattern counter
+static constexpr uint8_t FIFO_CFG_FIFO_MODE   = 0x41; // (8<<3)|1 — stop-on-full
+static constexpr uint8_t FIFO_CFG_CONTINUOUS  = 0x43; // (8<<3)|3 — ring buffer (overwrites oldest)
 
 // FIFO_CTRL3: DEC_FIFO_G[5:3]=001 (gyro, no decimation) | DEC_FIFO_XL[2:0]=001 (accel, no decimation)
 static constexpr uint8_t FIFO_CTRL3_NO_DEC = 0x09;
@@ -159,18 +160,48 @@ void IMU::loop()
         break;
 
     case CAPTURING:
-        // In Continuous-to-FIFO mode the IMU hardware switched the FIFO from ring-
-        // buffer to stop-on-full at the wake-up event.  We wait here until the FIFO
-        // is full (OVER_RUN fires within one sample period if it was already at
-        // capacity) or a 300 ms safety timeout expires.
+        // Phase 1 (0 … POST_EVENT_MS ms): ring buffer keeps rolling in Continuous mode.
+        //   New post-event samples push old pre-event samples out of the window,
+        //   shifting the capture toward the event and beyond.
         //
-        // If REARM_DELAY_MS < FIFO window (~205 ms), the FIFO was not full at trigger
-        // time, so post-event samples accumulate here until the FIFO fills.
-        if ((readReg(REG_FIFO_STATUS2) & FIFO_STATUS2_OVER_RUN) ||
-            (millis() - _captureStart_ms) > 300)
+        // Phase 2 (POST_EVENT_MS elapsed): freeze by switching to stop-on-full WITHOUT
+        //   a Bypass reset — Bypass would erase the data.  Since the ring buffer was
+        //   full, OVER_RUN fires within one ODR period (603 µs).
+        //   A 300 ms safety timeout guards against edge cases.
+        //
+        // Pre/post split: post ≈ POST_EVENT_MS × 1.66 samples, pre ≈ 341 − post.
         {
-            _drainTime_us = micros();
-            _state = DRAINING;
+            uint32_t elapsed = millis() - _captureStart_ms;
+
+            if (!_fifoFrozen && elapsed >= POST_EVENT_MS)
+            {
+                writeReg(REG_FIFO_CTRL5, FIFO_CFG_FIFO_MODE);
+                _fifoFrozen = true;
+            }
+
+            if (_fifoFrozen)
+            {
+                uint8_t s2      = readReg(REG_FIFO_STATUS2);
+                bool    overrun = (s2 & FIFO_STATUS2_OVER_RUN) != 0;
+                bool    timeout = elapsed > POST_EVENT_MS + 300;
+                if (overrun || timeout)
+                {
+                    _drainTime_us = micros();
+                    if (verbose)
+                    {
+                        uint8_t s1  = readReg(REG_FIFO_STATUS1);
+                        uint8_t fc5 = readReg(REG_FIFO_CTRL5);
+                        Serial.print(F("IMU: cap->drain  OR="));
+                        Serial.print(overrun ? 'Y' : 'N');
+                        Serial.print(F(" TO="));
+                        Serial.print(timeout ? 'Y' : 'N');
+                        Serial.print(F("  S2=0x")); Serial.print(s2,  HEX);
+                        Serial.print(F(" S1=0x"));  Serial.print(s1,  HEX);
+                        Serial.print(F(" FC5=0x")); Serial.println(fc5, HEX);
+                    }
+                    _state = DRAINING;
+                }
+            }
         }
         break;
 
@@ -186,6 +217,8 @@ void IMU::loop()
 // ── Private: arm ──────────────────────────────────────────────────────────────
 void IMU::arm()
 {
+    _fifoFrozen = false;
+
     // 1. Bypass mode resets the FIFO and clears the pattern counter.
     writeReg(REG_FIFO_CTRL5, FIFO_CFG_BYPASS);
     delayMicroseconds(200);
@@ -194,11 +227,13 @@ void IMU::arm()
     //    with no decimation so every ODR sample is stored.
     writeReg(REG_FIFO_CTRL3, FIFO_CTRL3_NO_DEC);
 
-    // 3. Start FIFO in Continuous-to-FIFO mode at 1.66 kHz.
-    //    The FIFO acts as a rolling ring buffer until the IMU detects a
-    //    wake-up event, then automatically switches to stop-on-full (FIFO mode)
-    //    so all samples at and around the event are preserved.
-    writeReg(REG_FIFO_CTRL5, FIFO_CFG_CONT_TO_FIFO);
+    // 3. Start FIFO in Continuous (ring-buffer) mode at 1.66 kHz.
+    //    The FIFO continuously overwrites the oldest samples so there is always
+    //    ~205 ms of pre-event data available.  At trigger time we switch to
+    //    stop-on-full (FIFO mode) in software, preserving the ring-buffer content.
+    //    (Hardware Continuous-to-FIFO mode 0x44 requires INT2 as its trigger and
+    //    does not fill the ring buffer via INT1, so we replicate the behaviour here.)
+    writeReg(REG_FIFO_CTRL5, FIFO_CFG_CONTINUOUS);
 
     // 4. Configure wake-up threshold and duration via the Adafruit library
     //    (writes TAP_CFG, WAKE_UP_THS, WAKE_UP_DUR).
@@ -211,7 +246,7 @@ void IMU::arm()
     _isrFired = false;
     attachInterrupt(digitalPinToInterrupt(IMU_INT1_PIN), imuISR, RISING);
 
-    if (verbose) Serial.println(F("IMU: armed (Continuous-to-FIFO mode)"));
+    if (verbose) Serial.println(F("IMU: armed (Continuous ring-buffer mode)"));
     _state = ARMED;
 }
 
@@ -220,17 +255,26 @@ void IMU::drainFIFO()
 {
     _clapEvent.clear();
     uint16_t sampleCount = 0;
-    uint16_t wordCount = 0;
+
+    // Determine how many words are in the FIFO.  After switching from Continuous
+    // to FIFO mode, the hardware resets DIFF_FIFO to 0 even though the physical
+    // buffer holds 2048 words.  FIFO_FULL and OVER_RUN are sticky flags that
+    // reliably indicate the buffer is full, so we use them as a fallback.
+    uint8_t  s2    = readReg(REG_FIFO_STATUS2);
+    uint16_t words = fifoWordCount();
+    if (words == 0 && (s2 & (FIFO_STATUS2_FIFO_FULL | FIFO_STATUS2_OVER_RUN)))
+    {
+        words = 2048;
+    }
 
     if (verbose)
     {
         Serial.print(F("IMU: draining ~"));
-        wordCount = fifoWordCount();
-        Serial.print(wordCount / 6);
+        Serial.print(words / 6);
         Serial.println(F(" samples"));
     }
 
-    // Read samples until the FIFO has fewer than 6 words left or the buffer is full.
+    // Read samples until words is exhausted or the output buffer is full.
     //
     // CRITICAL: Check FIFO_STATUS3 (the pattern register) before EVERY sample.
     // FIFO_STATUS3 reports the type of the next word to be read:
@@ -240,20 +284,22 @@ void IMU::drainFIFO()
     // remainder of the partial sample so the next read starts on a clean Gx boundary.
     // Without this per-sample check, one slip corrupts all subsequent samples until
     // the next drain — which is what causes the rotating +1g anomaly in ax/ay/az.
+    //
+    // words is decremented manually rather than re-reading DIFF_FIFO each iteration,
+    // because DIFF_FIFO may stay at 0 (per above) even while the FIFO has data.
     while (sampleCount < BUF_CAPACITY)
     {
-        wordCount = fifoWordCount();
-        if (wordCount < 6) break;
+        if (words < 6) break;
 
         // ── Per-sample alignment check ────────────────────────────────────────
         uint8_t pattern = readReg(REG_FIFO_STATUS3);
         if (pattern != 0)
         {
             uint8_t skip = 6 - pattern; // words to reach the next Gx boundary
-            if (skip >= wordCount) break;
+            if (skip >= words) break;
             for (uint8_t j = 0; j < skip; j++) readFIFOWord();
-            wordCount -= skip;
-            if (wordCount < 6) break;
+            words -= skip;
+            if (words < 6) break;
         }
 
         // ── Read one complete sample: Gx, Gy, Gz, Ax, Ay, Az ─────────────────
@@ -263,6 +309,7 @@ void IMU::drainFIFO()
         int16_t rawAx = readFIFOWord();
         int16_t rawAy = readFIFOWord();
         int16_t rawAz = readFIFOWord();
+        words -= 6;
 
         ClapData &d = _clapEvent.samples[sampleCount++];
         d.accX  = rawAx * ACCEL_SENS * MG_TO_MS2;
@@ -283,6 +330,43 @@ void IMU::drainFIFO()
         _clapEvent.samples[i].timestamp =
             (int32_t)(_drainTime_us - _triggerTime_us)
             - (int32_t)(sampleCount - 1 - i) * (int32_t)SAMPLE_INTERVAL_US;
+    }
+
+    // ── Gravity compensation ──────────────────────────────────────────────────
+    // Average the pre-event samples (timestamp < 0) to estimate the static
+    // gravity vector, then subtract it from every sample so the accel channels
+    // represent only dynamic acceleration (gravity ≈ 0 at rest).
+    {
+        float    sumX = 0, sumY = 0, sumZ = 0;
+        uint16_t n    = 0;
+        for (uint16_t i = 0; i < sampleCount; i++)
+        {
+            if (_clapEvent.samples[i].timestamp < 0)
+            {
+                sumX += _clapEvent.samples[i].accX;
+                sumY += _clapEvent.samples[i].accY;
+                sumZ += _clapEvent.samples[i].accZ;
+                n++;
+            }
+        }
+        if (n > 0)
+        {
+            float bX = sumX / n, bY = sumY / n, bZ = sumZ / n;
+            for (uint16_t i = 0; i < sampleCount; i++)
+            {
+                _clapEvent.samples[i].accX -= bX;
+                _clapEvent.samples[i].accY -= bY;
+                _clapEvent.samples[i].accZ -= bZ;
+            }
+            if (verbose)
+            {
+                Serial.print(F("IMU: gravity bias  bX="));  Serial.print(bX, 3);
+                Serial.print(F(" bY="));                     Serial.print(bY, 3);
+                Serial.print(F(" bZ="));                     Serial.print(bZ, 3);
+                Serial.print(F("  ("));                      Serial.print(n);
+                Serial.println(F(" pre-event samples)"));
+            }
+        }
     }
 }
 

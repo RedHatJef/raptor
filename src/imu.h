@@ -16,11 +16,16 @@ static constexpr uint8_t IMU_INT1_PIN = 3;
 static constexpr uint8_t LSM_ADDR = 0x6A;
 
 // Delay (ms) between the end of a drain and the next rearm.
-// This also controls the pre/post event balance in Continuous-to-FIFO mode:
-// the FIFO window is ~205 ms (341 samples at 1.66 kHz).
-//   REARM_DELAY_MS >= 205 → FIFO is full at trigger → ~205 ms pre-event, 0 post.
-//   REARM_DELAY_MS <  205 → FIFO partially empty → some post-event data captured.
+// Must be long enough for the ring buffer to fill (~205 ms = 341 samples at 1.66 kHz).
 static constexpr uint16_t REARM_DELAY_MS = 500;
+
+// How long to keep the ring buffer running AFTER the trigger fires before freezing it.
+// The FIFO holds 341 samples; POST_EVENT_MS controls the pre/post split:
+//   post-event samples ≈ POST_EVENT_MS × 1.66
+//   pre-event samples  ≈ 341 − post-event samples
+// Example: 150 ms → ~249 post-event, ~92 pre-event (~73 % post).
+// Set to 0 for all pre-event (snapshot just before the event).
+static constexpr uint16_t POST_EVENT_MS = 150;
 
 // Maximum samples to store in ClapEvent (must not exceed ClapData samples[]).
 static constexpr uint16_t BUF_CAPACITY = 511;
@@ -45,6 +50,7 @@ private:
 
     State    _state           = ARMING;
     bool     _isUp            = false;
+    bool     _fifoFrozen      = false;
     uint32_t _triggerTime_us  = 0;
     uint32_t _drainTime_us    = 0;
     uint32_t _captureStart_ms = 0;
