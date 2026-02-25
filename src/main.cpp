@@ -2,10 +2,12 @@
 #include <Wire.h>
 #include <vector>
 #include "imu.h"
+#include "micpdm.h"
 #include "neopixel.h"
 #include "wire_util.h"
 
 static IMU      imu;
+static MicPDM   mic;
 static NeoPixel neo;
 
 void setup() {
@@ -24,9 +26,15 @@ void setup() {
 
   neo.setup();
   imu.setup();
+  mic.setup();
 }
 
 void loop() {
+  // Check mic first so a loud event can softTrigger the IMU in the same iteration.
+  mic.loop();
+  if (mic.takeLoudFlag())
+    imu.softTrigger();
+
   imu.loop();
 
   if (imu.takeImpactFlag())

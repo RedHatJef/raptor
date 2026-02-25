@@ -390,3 +390,8 @@ bool IMU::takeDrainDoneFlag()
     _drainDoneFlag = false;
     return true;
 }
+
+void IMU::softTrigger()
+{
+    _isrFired = true;
+}

@@ -51,6 +51,11 @@ public:
     // Clears the flag on read, so subsequent calls return false until the next event.
     bool        takeDrainDoneFlag();
 
+    // Software trigger: equivalent to the hardware INT1 firing.
+    // Call from main loop when an external source (e.g. MicPDM) detects an event.
+    // Only has effect while the state machine is in ARMED state.
+    void        softTrigger();
+
 private:
     enum State { ARMING, ARMED, CAPTURING, DRAINING };
 
