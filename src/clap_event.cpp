@@ -1,20 +1,16 @@
 #include "clap_event.h"
 
-ClapEvent::ClapEvent(int32_t _timestamp, size_t reserveCount)
-    : timestamp(_timestamp)
+ClapEvent::ClapEvent()
 {
-    if (reserveCount > 0)
-    {
-        samples.reserve(reserveCount);
+    clear();
+}
+
+void ClapEvent::clear()
+{
+    timestamp = 0;
+    temperature = pressure = humidity = 0;
+    sampleCount = 0;
+    for(int i= 0; i < MAX_SAMPLES; i++) {
+        samples[i].clear();
     }
-}
-
-void ClapEvent::addClapData(const ClapData& data)
-{
-    samples.push_back(data);
-}
-
-void ClapEvent::reserve(size_t count)
-{
-    samples.reserve(count);
 }

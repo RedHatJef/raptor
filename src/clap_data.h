@@ -10,4 +10,10 @@ struct ClapData
     float gyroX = 0;              ///< Last reading's gyro X axis in rad/s
     float gyroY = 0;              ///< Last reading's gyro Y axis in rad/s
     float gyroZ = 0;              ///< Last reading's gyro Z axis in rad/s
+
+    void clear() {
+        timestamp = 0;
+        accX = accY = accZ = 0;
+        gyroX = gyroY = gyroZ = 0;
+    }
 };
