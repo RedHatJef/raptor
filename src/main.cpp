@@ -17,8 +17,8 @@ void setup() {
   Wire.setTimeout(50);
   delay(10);
 
-  uint8_t devices[16];
-  WireUtil::scan(Wire, devices, sizeof(devices)/sizeof(devices[0]));
+  // uint8_t devices[16];
+  // WireUtil::scan(Wire, devices, sizeof(devices)/sizeof(devices[0]));
 
   imu.setup();
 }

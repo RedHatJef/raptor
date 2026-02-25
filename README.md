@@ -79,7 +79,7 @@ This device needs to run for an entire day of shooting, with time to spare.  Ide
 
 ### Was this part built specifically for this project???
 
-As I was researching some of the nRF52XXX modules available on amazon, I stumbled upon the [Adafruit Feather nRF52840 Sense](https://www.adafruit.com/product/4516) for $39.50
+As I was researching some of the nRF52XXX modules available on amazon, I stumbled upon the Adafruit Feather nRF52840 Sense for $39.50
 
 This fantastic little module is the size of two postage stamps and includes:
 - 1MB Flash, 256K RAM
@@ -92,7 +92,8 @@ This fantastic little module is the size of two postage stamps and includes:
 - Exposed SWD debug ports (for JTAG programming/debugging)
 - Reset and User Button
 
-Useful Links:
+#### Adafruit Feather nRF52840 Links
+- [Store Link](https://www.adafruit.com/product/4516)
 - [Adafruit Feather nRF5280 Sense Startup Guide](https://learn.adafruit.com/adafruit-feather-sense)
 - [Pinout](https://cdn-learn.adafruit.com/assets/assets/000/110/594/original/sensors_Adafruit_Feather_nRF52840_Sense_pinout.png)
 - [Schematic](https://cdn-learn.adafruit.com/assets/assets/000/127/209/original/sensors_schem.png)
@@ -100,6 +101,16 @@ Useful Links:
 - [Base nRF52XXX Feather](https://www.adafruit.com/product/4062)
 
 The IMU here isn't ideal - but would be a good starting point.  Using an off-the-shelf unit like this will get the project kicked off quickly so building a custom system on a base nRF52XXX unit won't be a barrier to exploring this project.
+
+#### Adafruit Feather nRF52840 Part Links:
+
+| Part Name | Part Id | Datasheet | Breakout Purchase Link |
+|-----------|---------|-----------|------------------------|
+| Microcontroller | nRF52840 | [Main Page](https://www.nordicsemi.com/Products/nRF52840)<br>[Datasheet](https://mm.digikey.com/Volume0/opasdata/d220001/medias/docus/6470/NRF52840-QFAA-F-R.pdf) | [Feather Express](https://www.adafruit.com/product/4062)<br>[ItsyBitsy](https://www.adafruit.com/product/4481) |
+| LSM6DS3TR-C | IMU/Gyro | [Datasheet](https://cdn-shop.adafruit.com/product-files/4503/4503_LSM6DS3TR-C_datasheet.pdf) | [Module](https://www.adafruit.com/product/4503) |
+| MP34DT01-M | PDM MEMS Microphone | [Datasheet](https://cdn-learn.adafruit.com/assets/assets/000/049/977/original/MP34DT01-M.pdf) | [Module](https://www.adafruit.com/product/3492) |
+
+
 
 ## Putting It All Together
 
