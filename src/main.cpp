@@ -5,10 +5,14 @@
 #include "micpdm.h"
 #include "neopixel.h"
 #include "wire_util.h"
+#include "sht30.h"
+#include "bmp280.h"
 
 static IMU      imu;
 static MicPDM   mic;
 static NeoPixel neo;
+static SHT30    sht;
+static BMP280   bmp;
 
 void setup() {
   Serial.begin(115200);
@@ -27,9 +31,14 @@ void setup() {
   neo.setup();
   imu.setup();
   mic.setup();
+  sht.setup();
+  bmp.setup();
 }
 
 void loop() {
+  sht.loop();
+  bmp.loop();
+
   // Check mic first so a loud event can softTrigger the IMU in the same iteration.
   mic.loop();
   if (mic.takeLoudFlag())
@@ -40,8 +49,11 @@ void loop() {
   if (imu.takeImpactFlag())
     neo.trigger();
 
-  if (imu.takeDrainDoneFlag())
+  if (imu.takeDrainDoneFlag()) {
     neo.captureComplete();
+    sht.printCached();
+    bmp.printCached();
+  }
 
   neo.loop();
 }

@@ -61,17 +61,17 @@ Most notably, this new part will require a different workflow.  I find the “dr
 
 Fortunately, with the explosion of small DIY drone development, there are many options for a gyro/accelerometer units (sometimes called an IMU or Inertial Measurement Unit).  
 
-I have some limited experience with the LSM6 series of gyro/accelerometer[^3] – enough to get the basic idea of how it works and understand the general amount of noise it can produce and how hard it is to work with and get long-term stable readings.  Fortunately, for this project, relative movement is the most important aspect – not absolute orientation, so we can likely work around some noise.  This part has an advantage in that breakout boards are [readily available on amazon for a few bucks](https://www.amazon.com/NOYITO-Accelerometer-Gyroscope-Temperature-Interface/dp/B07K5LVMZ2). 
+I have some limited experience with the LSM6 series of gyro/accelerometer[^2] – enough to get the basic idea of how it works and understand the general amount of noise it can produce and how hard it is to work with and get long-term stable readings.  Fortunately, for this project, relative movement is the most important aspect – not absolute orientation, so we can likely work around some noise.  This part has an advantage in that breakout boards are [readily available on amazon for a few bucks](https://www.amazon.com/NOYITO-Accelerometer-Gyroscope-Temperature-Interface/dp/B07K5LVMZ2). 
 
 A much more ideal unit might be something like an ICM-42688.  Lower noise, higher sample rate, similar range of measurement.  Depending on the success of the LSM6, this could be an excellent future evolution.  Unfortunately, this part does not come in easily hand-solderable packages, and the links on amazon for breakout boards look a bit suspect, plus weeks to months out for shipping.  This could become a “when a real PCB gets designed, we add layouts for both parts and can solder one or the other on the PCB” kind of situation.  Until then, a breakout module from amazon on a breadboard will do nicely.
 
-[^3]:I tested several gyro/accelerometer units when building an underwater digital compass system – attempting to get a “level reading” is important in that application.
+[^2]:I tested several gyro/accelerometer units when building an underwater digital compass system – attempting to get a “level reading” is important in that application.
 
 #### Temperature/Humidity/Pressure
 
-There are many different atmospheric sensors out there[^4] – all fairly accurate and almost all with some sort of noise filtering/smoothing.  In general, these tend to be factory calibrated (and can be re-calibrated by the end user) and as such they tend to be very close in performance to each other.  While these environmental factors are important, half a degree won’t change much, and these measurements are “nice to have” anyway.
+There are many different atmospheric sensors out there[^3] – all fairly accurate and almost all with some sort of noise filtering/smoothing.  In general, these tend to be factory calibrated (and can be re-calibrated by the end user) and as such they tend to be very close in performance to each other.  While these environmental factors are important, half a degree won’t change much, and these measurements are “nice to have” anyway.
 
-[^4]:A previous project involved a x16 array of various I2C temperature/humidity/pressure sensors and studied drift and variance over time.  The results were insignificant in that the sensors tended to all be more than accurate enough for typical hobbyist needs.
+[^3]:A previous project involved a x16 array of various I2C temperature/humidity/pressure sensors and studied drift and variance over time.  The results were insignificant in that the sensors tended to all be more than accurate enough for typical hobbyist needs.
 
 #### Battery/Power
 
@@ -104,15 +104,29 @@ The IMU here isn't ideal - but would be a good starting point.  Using an off-the
 
 #### Adafruit Feather nRF52840 Part Links:
 
-| Part Name | Part Id | Datasheet | Breakout Purchase Link |
+| Part Id | Part Name | Datasheet | Breakout Purchase Link |
 |-----------|---------|-----------|------------------------|
 | Microcontroller | nRF52840 | [Main Page](https://www.nordicsemi.com/Products/nRF52840)<br>[Datasheet](https://mm.digikey.com/Volume0/opasdata/d220001/medias/docus/6470/NRF52840-QFAA-F-R.pdf) | [Feather Express](https://www.adafruit.com/product/4062)<br>[ItsyBitsy](https://www.adafruit.com/product/4481) |
 | LSM6DS3TR-C | IMU/Gyro | [Datasheet](https://cdn-shop.adafruit.com/product-files/4503/4503_LSM6DS3TR-C_datasheet.pdf) | [Module](https://www.adafruit.com/product/4503) |
 | MP34DT01-M | PDM MEMS Microphone | [Datasheet](https://cdn-learn.adafruit.com/assets/assets/000/049/977/original/MP34DT01-M.pdf) | [Module](https://www.adafruit.com/product/3492) |
-
+| SHT30 | Temperature/Humidity | [Datasheet](https://cdn-shop.adafruit.com/product-files/5064/5064_Sensirion_Humidity_Sensors_SHT3x_Datasheet_digital.pdf) | |
+| BMP280 | Temperature/Pressure | [Datasheet](https://cdn-shop.adafruit.com/datasheets/BST-BMP280-DS001-11.pdf) | [Module](https://www.adafruit.com/product/2651) |
+| WS2812B | NeoPixel RGB LED Module | [Datasheet](https://cdn-shop.adafruit.com/datasheets/WS2812B.pdf) | [Module](https://www.adafruit.com/product/5975) |
+| MP34DT01-M | PDM Microphone | [Datasheet](https://cdn-learn.adafruit.com/assets/assets/000/049/977/original/MP34DT01-M.pdf) | [Module](https://www.adafruit.com/product/4346) |
 
 
 ## Putting It All Together
+The development environment...
+<p align="center">
+<img src="img/DevelopmentEnvironment.jpeg" alt="The prototype development environment in all its glory." width=600>
+</p>
+
+### Attaching JTAG
+The Arduino nRF52840 Feather Sense does not come with a convenient JTAG port, unlike some of its cousins also available at Adafruit and other retailers.  Fortunately, it does expose a couple of small copper pads (on the bottom of the board, SIGH).  These two pads, as well as +V, GND, and Reset, make up the bulk of what the Segger J-Link JTAG wants in order to program/set breakpoints/debug.  I used wire-wrap wires and a two pin header I had laying around, plus some hot-glue to stabilize the exposed connections.
+
+<p align="center">
+<img src="img/JTAGConnectionPoints.jpeg" alt="The JTAG pads under the Arduino Feather Sense" width=600>
+</p>
 
 ### Bootloader
 
@@ -124,7 +138,9 @@ Later on, I managed to brick the feather, and wanted to run the bootloader for s
 
 #### CLion + PlatformIO
 
-I’m a huge fan of JetBrains products, and while the Arduino IDE has come a long way, it still feels purpose-built for single-file prototypes, and many of the helpful coder tools are missing.  Some of their refactor tools and coding suggestions make programming more enjoyable and reduce errors.  I’ve had a lot of success getting CLion to work with the AVR128DA32 projects I’ve done.  However, after spending many hours trying to bend CLion and PlatformIO to my will[^5] and make it talk to the Feather Sense, I admitted defeat, closed CLion, and started following the actual manual for installation and development.  I’m still sore about this, and don’t promise to never revisit this topic.
+I’m a huge fan of JetBrains products, and while the Arduino IDE has come a long way, it still feels purpose-built for single-file prototypes, and many of the helpful coder tools are missing.  Some of their refactor tools and coding suggestions make programming more enjoyable and reduce errors.  I’ve had a lot of success getting CLion to work with the AVR128DA32 projects I’ve done.  However, after spending many hours trying to bend CLion and PlatformIO to my will[^4] and make it talk to the Feather Sense, I admitted defeat, closed CLion, and started following the actual manual for installation and development.  I’m still sore about this, and don’t promise to never revisit this topic.
+
+[^4]:Many of the steps I used involved installation of nordic’s toolchain (west, zephyr) and a python environment set up to use those tools.  At the end of the day, it struggled to deal with my installation toolchain being in C:\ and my project directory in D:\.  I did manage to build and deploy some simple programs but it was onerous and difficult to work with – the opposite of what I’m looking for.
 
 #### Arduino IDE
 
@@ -142,13 +158,138 @@ In addition, I installed the JLink extensions, which gave me the ability to uplo
 
 ## Building a Prototype
 
+### Using AI
+
 In the past, I’ve been stalwart on my desire to “do everything myself.”  I typically use AI only for stand-alone utilities where the definition of the problem and end goal is relatively simple and the implementation could be complex – purely as a time-saver/annoyance limiter.
 
 However, during a recent deep-dive into setting timers on an AVR128DA32, I found myself 5 hours in to interrupt triggering logic not working and very annoyed.  Out of frustration (or desperation, you decide) I dumped the entire 600 page PDF into ChatGPT and told it to make me C code that would give me an interrupt trigger every X milliseconds using Timer2.  I had low hopes – that’s a big document and I didn’t give it many hints.  To my surprise and delight, it got the task right on the first shot.  
 
-This project, both hardware and software, is a collaborative effort between human and machine.  Quite a bit of time was spent a writing a TDD (technical design document) and iterating on the output of code.  Sometimes the result from AI was close, other times it was the wrong architecture.  It’s not a replacement for humans, yet.  But it’s a fantastic tool.
+This time around I decided to go all-in.  I've spent days and weeks building classes and libraries over the years, and feel pretty comfortable that I can do it again - but if there's a faster way and I still need to debug and modify it in the end to my liking - why not?
 
-Practically speaking, filling out an API (.h / header file) and asking AI to make a CPP file tends to get close enough to be good.  Asking it to help debug why certain bits of hardware might not be responding is helpful - things like "here's code to reset the I2C bus" was super handy.  That's how most of this project was developed.
+I started by asking ChatGPT how do build individual modules, feeding it source files and letting it make changes back and forth with me.  This got me about 60% of the way done, and never got me to 100% the way I wanted it to work. There were always bugs that were difficult to diagnose and fix and the AI eventually got so slow it was taking over 5 minutes to answer questions.
 
+I'd never used Claude, but had heard good things and decided to give it a shot.  Once you agree to [Anthropic's $20/mo Pro plan](https://claude.com/pricing), you are granted the ability to use [Claude Code](https://support.claude.com/en/articles/11145838-using-claude-code-with-your-pro-or-max-plan), which is required to be able to co-develop directly in editor with [Anthropic's Claude Code for VS](https://code.claude.com/docs/en/vs-code) plugin.
 
-[^5]:Many of the steps I used involved installation of nordic’s toolchain (west, zephyr) and a python environment set up to use those tools.  At the end of the day, it struggled to deal with my installation toolchain being in C:\ and my project directory in D:\.  I did manage to build and deploy some simple programs but it was onerous and difficult to work with – the opposite of what I’m looking for.
+My first attempt at a prototype built with Claude didn't go perfectly.  The code produced wasn't ideal, functional, complete, or generally fixable without a complete rewrite.  By the time I got to attempting to debug and fix within VS and the Claude plug-in, I'd run out of "time" and got shut down for the day.  (apparently this happens after a few hours or some amount of AI processing, and more expensive plans get you more processing time before this happens)
+
+On my second attempt, I had a great deal more success.  Some googling (and asking ChatGPT about Claude lol) told me that I needed to do things in smaller chunks.  Get one module done at a time, close the claude window, and when I started a new module, let Claude re-scan all my files from scratch.  Apparently the long chat history can really bog down AI's thinking.
+
+### Building Modules
+
+#### IMU (Gyro/Accelerometer)
+
+The IMU on the feather has a couple of really neat features that make my recoil sensing application really interesting.
+- It can detect taps (like tapping a watch or a phone to wake it)
+- It can continuously collect data into a FIFO buffer which can be read and cleared all at once.
+- It can run in a "Continuous to FIFO" mode - so it will continuously sample until a trigger condition is met and then it will keep the event data in memory.
+- It has an external interrupt wired to the nRF52840.
+
+It took a bit of time to get the external interrupt firing - there are several versions of the schematic and PCB floating around and unfortunately the PCB is not labeled as to what version it actually is.  Eventually I was able to trace the external interrupt line to a resistor network that I could carefully solder a wire-wrap wire onto, which allowed me to use a logic analyzer to debug.  
+
+<p align="center">
+<img src="img/DebuggingExternalInterrupt.jpeg" alt="Debugging the External Interrupt from the IMU to the nRF52840" width="600">
+</p>
+
+This allowed me to verify that I had both the IMU firing when it detected an event, and also troubleshoot the pin/port/line confusion of the arduino environment.  As usual, it was some mismatch of pin numbers to interrupt numbers to use of helper functions to translate from and to things.
+
+ ```
+     attachInterrupt(digitalPinToInterrupt(IMU_INT1_PIN), imuISR, RISING);
+ ```
+
+Once the external interrupt was firing, I was able to tune the system to record at fastest possible speed - 6.66kHz - so the sample window was approximately 50ms and 341 samples.  Since I'm more interested in (mostly) what happens after the impact event (recoil) I'm saving 40ms of the window for after the event, and 10ms for before the event.  Depending on what kind of data I see, it may be necessary to lower the sampling rate so the timing window is wider, but that will be a future experiment under "more realistic" conditions.
+
+#### NeoPixel
+
+I don't want anything super fancy at first - just something that says "hey I got a sample, I'm saving it, I'm transferring it to the mobile app, ...".  The multi-color NeoPixel works great for that.  After Claude decided to write some interesting early-return type loop functionality, I gave the instruction to use "a real state machine with the following states: ...".  Once we got over that hump, results improved.
+
+Claude didn't do so well understanding that the NeoPixel library on Arduino has 0 and the brightest, 1 as the dimmest, and 255 as the "almost brightest."  So basically ... 0 is "really really bright."  Some manual code updates later, and everything works great.  When an impact is detected, the LED goes from green (resting) to red (impact) to blue (transferring data) and then fades back to green (resting again).
+
+#### Atmospheric Sensors
+
+I've written a bunch of sensor libraries over the years, and have a recipe for what I like.  In this case, I wanted a setup() and loop() function, and I wanted the sensors configured in "as accurate/oversampled" as possible.  I didn't want anything interrupt driven, and I wanted the readings to be continuously sampled and cached so I could read the stored values inline with other performance code.
+
+In practice, the atmospheric data is read at the end of an event and will be part of the event data sent to the mobile phone.
+
+#### PDM Microphone
+
+In addition to impact sensing, the system will also listen for very loud sounds (like a nearby hand clap) and treat this just like an impact from the external interrupt.  Either the IMU or PDM can trigger a dump of the gyro/accel data.  The PDM (Pulse Density Modulated) sensor converts sound signals to a clock-driven output (1-3MHz) that will match the sound wave coming in.
+<p align="center">
+<img src="https://cdn-learn.adafruit.com/assets/assets/000/049/972/original/sensors_Pulse_density_modulation.png?1515617720" width=600>
+</p>
+
+Adafruit once again has [a great write-up on how these devices work](https://learn.adafruit.com/adafruit-pdm-microphone-breakout/overview).  From my perspective, I just need a trigger when a loud noise is present, and it works great for that.
+
+## Sample Output
+
+### Direct Terminal Debug
+
+The console output is long (400 lines each event).
+
+Header:
+
+```
+IMU: armed (Continuous ring-buffer mode, 6.66 kHz)
+IMU: trigger detected
+IMU: cap->drain  OR=Y TO=N  S2=0x60 S1=0x0 FC5=0x51
+IMU: draining ~341 samples
+IMU: gravity bias  bX=-0.103 bY=0.019 bZ=10.084  (74 pre-event samples)
+
+--- Recoil Event Captured ---
+dt_us,ax_ms2,ay_ms2,az_ms2,gx_rads,gy_rads,gz_rads
+-10961,0.2225,-0.0429,0.0279,-0.0086,-0.0147,-0.0611
+-10811,0.0693,0.0911,-0.0103,0.0220,-0.0293,0.0574
+-10661,0.0167,0.0528,0.0375,0.0293,-0.0293,-0.0220
+-10511,0.0167,0.1150,-0.0008,-0.0012,-0.0293,-0.0293
+-10361,-0.0982,0.0433,-0.0247,-0.0086,-0.0293,0.0415
+-10211,0.0885,0.2060,-0.0247,0.0293,-0.0293,-0.0452
+-10061,-0.0934,0.1677,0.0184,-0.0244,-0.0293,-0.0134
+-9911,-0.0312,-0.1290,-0.0343,0.0220,-0.0293,-0.0134
+```
+The Impact Event:
+```
+-461,-0.0790,0.1773,0.0519,0.0073,0.0012,0.0110
+-311,-0.1077,0.0528,0.0088,0.0147,-0.0147,-0.0134
+-161,-0.1795,0.1438,-0.0295,0.0073,0.0159,0.0257
+-11,0.1411,-0.0142,-0.0391,0.0379,-0.1063,-0.0134
+139,-0.0503,0.1485,0.0375,0.0073,0.0086,-0.0525
+289,-0.1125,-0.0477,0.0136,0.0452,-0.0757,0.0342
+439,-0.7969,-0.0620,-0.1300,0.0073,0.0159,-0.0525
+589,-5.5825,0.6606,-0.4602,-0.0464,0.0244,0.0024
+739,-7.7408,-0.1577,-0.2831,-0.0012,-0.0061,0.0574
+889,-9.3584,0.2060,-0.1683,0.0452,0.0159,0.0660
+1039,-12.7275,0.7133,-0.2975,0.0379,-0.0452,-0.0134
+1189,-13.8569,0.1294,-0.3788,0.0525,0.0391,0.0733
+1339,-18.0874,0.4500,-0.7091,-0.0159,-0.0452,0.1454
+1489,-24.0168,0.3639,-0.7186,-0.1087,-0.0599,0.1295
+1639,-29.2092,0.4357,-0.5703,-0.0623,0.1014,0.2236
+1789,-34.5357,0.3830,-0.3118,-0.0855,0.1319,0.3103
+1939,-40.6469,0.6415,-0.4411,-0.0318,0.1014,0.3348
+2089,-48.7347,0.2969,-0.8670,-0.0550,0.1014,0.3824
+2239,-55.2144,1.0578,-0.5655,-0.0464,0.1319,0.4765
+2389,-63.1155,0.1725,-0.4315,-0.1625,0.0929,0.5950
+2539,-70.0930,-2.0241,-0.0247,-0.1319,0.1552,0.6903
+2689,-74.2039,-1.8327,0.5926,-0.2395,0.2541,0.7611
+2839,-78.7120,-3.1918,0.6549,-0.1161,0.2700,0.8332
+2989,-85.3162,-4.1633,1.2148,-0.2309,0.2700,0.8650
+```
+The end of the event list, plus atmospherics:
+```
+39589,4.6588,-0.7033,0.1572,-0.0550,-0.0831,-0.5351
+39739,4.1850,-0.5262,0.1715,0.0220,-0.0525,-0.4007
+39889,4.4051,-1.0431,0.2768,-0.0318,-0.1674,-0.4166
+40039,4.7258,-0.7703,0.3390,-0.0159,-0.0990,-0.4875
+# samples: 341
+--- End of capture ---
+
+SHT30 : Temp=27.3C (81.2F)  Humidity=36.6%RH
+BMP280: Temp=27.2C (80.9F)  Pressure=965.21 hPa (28.5026 inHg)
+IMU: armed (Continuous ring-buffer mode, 6.66 kHz)
+```
+
+### Excel Visualization
+
+The impact shown in the data above and graph below was from a hard tap in the X-direction to the wired prototype board.
+
+<p align="center">
+<img src="img/ImpactExcel.jpg" width=600>
+</p>
