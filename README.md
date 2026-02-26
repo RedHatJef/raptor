@@ -1,8 +1,18 @@
-# R.A.P.T.O.R.
-**Recoil Analysis & Precision Trigger Observation Recorder**
+<p align="center">
+  <img src="img/RaptorBackground.jpg" alt="RAPTOR banner" width="100%">
+</p>
 
-*(a Ballistic Recoil Tracking System)*
+<p align="center">
+  <img src="https://img.shields.io/badge/platform-nRF52840-blue" />
+  <img src="https://img.shields.io/badge/IMU-LSM6DS3TR--C-purple" />
+  <img src="https://img.shields.io/badge/status-WIP-orange" />
+  <img src="https://img.shields.io/badge/license-MIT-green" />
+</p>
 
+---
+
+# RAPTOR
+<i>A Ballistic Recoil Tracking System</i>
 ## Project Overview
 
 Precision shooting is one of my favorite hobbies.  As is the case with most hobbies, it can be an endless journey of finding and purchasing (or building) items to continually make small forward gains – in this case - better rifles, better scopes, better ammo, tools for measuring things like bullet velocity and weather, etc.  However, at the end of the day, one common factor can make the difference between success and failure – the human.
@@ -17,7 +27,10 @@ This project aims to remove some of the factors of shooting (bullet physics, env
 
 Some commercial examples of a system like this exist.  One of the most popular is the [Mantis X10 Elite Shooting Performance System](https://mantisx.com/products/mantis-x10-elite) – at approximately $249.  This device is mainly marketed as a dry-fire tool on pistols.  (using a laser cartridge indoors to practice draw and fire times as well as accuracy)  
 
-![Mobile App Tracking with Mantis X10 Elite](https://www.recoilweb.com/wp-content/uploads/2020/11/Screenshot_20201020-184807-278x450.png)
+<p align="center">
+<img src="https://www.recoilweb.com/wp-content/uploads/2020/11/Screenshot_20201020-184807-278x450.png" alt="Mobile App Tracking with Mantis X10 Elite">
+</p>
+
 
 The system is very capable, but the core concept is the ability to detect and quantify movement during the time of fire in the X/Z plane (up and down, left and right).  This can be used to compare different shooting platforms/techniques and can show progress over time if these things are improving.
 
