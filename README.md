@@ -92,6 +92,8 @@ This fantastic little module is the size of two postage stamps and includes:
 - Exposed SWD debug ports (for JTAG programming/debugging)
 - Reset and User Button
 
+Most of these auxillary parts are connected to the main processor via I2C/TWI.  The breakout board has dedicated pins for hardware I2C, SPI, and UART peripherals.  The UART in particular will be handy when working towards bluetooth data transfer. 
+
 #### Adafruit Feather nRF52840 Links
 - [Store Link](https://www.adafruit.com/product/4516)
 - [Adafruit Feather nRF5280 Sense Startup Guide](https://learn.adafruit.com/adafruit-feather-sense)
@@ -293,3 +295,10 @@ The impact shown in the data above and graph below was from a hard tap in the X-
 <p align="center">
 <img src="img/ImpactExcel.jpg" width=600>
 </p>
+
+## Next Steps
+
+Now that the system seems to be putting out data well, the next steps are to bundle that data up into a nice SLIP packet to be transmitted over bluetooth to a mobile device (or laptop for the time being).  
+
+To be continued...
+
