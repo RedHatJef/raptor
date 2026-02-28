@@ -3,10 +3,19 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/platform-nRF52840-blue" />
-  <img src="https://img.shields.io/badge/IMU-LSM6DS3TR--C-purple" />
-  <img src="https://img.shields.io/badge/status-WIP-orange" />
-  <img src="https://img.shields.io/badge/license-MIT-green" />
+    <img src="https://img.shields.io/badge/MCU-nRF52840-blue" />
+    <img src="https://img.shields.io/badge/Framework-Arduino-00979D?logo=arduino&logoColor=white" />
+    <img src="https://img.shields.io/badge/Platform-PlatformIO-ff6600?logo=platformio&logoColor=white" />
+    <img src="https://img.shields.io/badge/status-WIP-orange" />
+    <br>
+    <img src="https://img.shields.io/badge/Debug-Segger_JLink_JTAG-B9BEC3" />
+    <img src="https://img.shields.io/badge/Bus-I2C-c66a00" />
+    <img src="https://img.shields.io/badge/Interface-Bluetooth-c66a00" />
+    <br>
+    <img src="https://img.shields.io/badge/IMU-LSM6DS3TR--C-purple" />
+    <img src="https://img.shields.io/badge/RH%2FTemp-SHT30-c44536" />
+    <img src="https://img.shields.io/badge/Pressure-BMP280-b8860b" />
+    <img src="https://img.shields.io/badge/Audio-PDM_Microphone-6495ED" />
 </p>
 
 ---
@@ -133,14 +142,14 @@ The IMU here isn't ideal - but would be a good starting point.  Using an off-the
 ## Putting It All Together
 The development environment...
 <p align="center">
-<img src="img/DevelopmentEnvironment.jpeg" alt="The prototype development environment in all its glory." width=600>
+<img src="img/DevelopmentEnvironment.jpeg" alt="The prototype development environment in all its glory." width="100%">
 </p>
 
 ### Attaching JTAG
 The Arduino nRF52840 Feather Sense does not come with a convenient JTAG port, unlike some of its cousins also available at Adafruit and other retailers.  Fortunately, it does expose a couple of small copper pads (on the bottom of the board, SIGH).  These two pads, as well as +V, GND, and Reset, make up the bulk of what the Segger J-Link JTAG wants in order to program/set breakpoints/debug.  I used wire-wrap wires and a two pin header I had laying around, plus some hot-glue to stabilize the exposed connections.
 
 <p align="center">
-<img src="img/JTAGConnectionPoints.jpeg" alt="The JTAG pads under the Arduino Feather Sense" width=600>
+<img src="img/JTAGConnectionPoints.jpeg" alt="The JTAG pads under the Arduino Feather Sense" width="80%">
 </p>
 
 ### Bootloader
@@ -202,7 +211,7 @@ The IMU on the feather has a couple of really neat features that make my recoil 
 It took a bit of time to get the external interrupt firing - there are several versions of the schematic and PCB floating around and unfortunately the PCB is not labeled as to what version it actually is.  Eventually I was able to trace the external interrupt line to a resistor network that I could carefully solder a wire-wrap wire onto, which allowed me to use a logic analyzer to debug.  
 
 <p align="center">
-<img src="img/DebuggingExternalInterrupt.jpeg" alt="Debugging the External Interrupt from the IMU to the nRF52840" width="600">
+<img src="img/DebuggingExternalInterrupt.jpeg" alt="Debugging the External Interrupt from the IMU to the nRF52840" width="80%">
 </p>
 
 This allowed me to verify that I had both the IMU firing when it detected an event, and also troubleshoot the pin/port/line confusion of the arduino environment.  As usual, it was some mismatch of pin numbers to interrupt numbers to use of helper functions to translate from and to things.
@@ -234,9 +243,12 @@ In addition to impact sensing, the system will also listen for very loud sounds 
 
 Adafruit once again has [a great write-up on how these devices work](https://learn.adafruit.com/adafruit-pdm-microphone-breakout/overview).  From my perspective, I just need a trigger when a loud noise is present, and it works great for that.
 
-## Sample Output
+# Conclusion
 
-### Direct Terminal Debug
+Here you can see the device being given a sharp bump, to simulate a real-world recoil.  The LED turns RED (to indicate the impact) then BLUE (to indicate data recording has completed) and then slowly fades back to dim GREEN (ready/waiting state).
+<p align="center"><img src="img/RaptorBump.gif"></p>
+
+## Terminal Output
 
 The console output is long (400 lines each event).
 
@@ -301,13 +313,11 @@ BMP280: Temp=27.2C (80.9F)  Pressure=965.21 hPa (28.5026 inHg)
 IMU: armed (Continuous ring-buffer mode, 6.66 kHz)
 ```
 
-### Excel Visualization
+## Excel Visualization
 
 The impact shown in the data above and graph below was from a hard tap in the X-direction to the wired prototype board.
 
-<p align="center">
-<img src="img/ImpactExcel.jpg" width=600>
-</p>
+<p align="center"><img src="img/ImpactExcel.jpg" width="90%"></p>
 
 ## Next Steps
 
