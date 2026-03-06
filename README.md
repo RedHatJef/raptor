@@ -246,7 +246,11 @@ Adafruit once again has [a great write-up on how these devices work](https://lea
 # Conclusion
 
 Here you can see the device being given a sharp bump, to simulate a real-world recoil.  The LED turns RED (to indicate the impact) then BLUE (to indicate data recording has completed) and then slowly fades back to dim GREEN (ready/waiting state).
-<p align="center"><img src="img/RaptorBump.gif"></p>
+<p align="center">
+    <a href="https://youtu.be/IVwLC3q9LbM">
+        <img src="img/RaptorBump.gif">
+    </a>
+</p>
 
 ## Terminal Output
 
